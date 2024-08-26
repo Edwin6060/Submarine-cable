@@ -1,0 +1,3889 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="css/leaflet.css">
+        <link rel="stylesheet" href="css/L.Control.Layers.Tree.css">
+        <link rel="stylesheet" href="css/qgis2web.css">
+        <link rel="stylesheet" href="css/fontawesome-all.min.css">
+        <link rel="stylesheet" href="css/leaflet-control-geocoder.Geocoder.css">
+        <link rel="stylesheet" href="css/leaflet-measure.css">
+        <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title></title>
+    </head>
+    <body>
+        <div id="map">
+        </div>
+        <script src="js/qgis2web_expressions.js"></script>
+        <script src="js/leaflet.js"></script>
+        <script src="js/L.Control.Layers.Tree.min.js"></script>
+        <script src="js/leaflet.rotatedMarker.js"></script>
+        <script src="js/leaflet.pattern.js"></script>
+        <script src="js/leaflet-hash.js"></script>
+        <script src="js/Autolinker.min.js"></script>
+        <script src="js/rbush.min.js"></script>
+        <script src="js/labelgun.min.js"></script>
+        <script src="js/labels.js"></script>
+        <script src="js/leaflet-control-geocoder.Geocoder.js"></script>
+        <script src="js/leaflet-measure.js"></script>
+        <script src="data/Worldmapworld_map_2.js"></script>
+        <script src="data/submarine_cables_3.js"></script>
+        <script>
+        var highlightLayer;
+        function highlightFeature(e) {
+            highlightLayer = e.target;
+            highlightLayer.openPopup();
+        }
+        var map = L.map('map', {
+            zoomControl:false, maxZoom:28, minZoom:1
+        }).fitBounds([[-56.90344873940253,-109.98632736829362],[69.33883925136328,143.59874178376774]]);
+        var hash = new L.Hash(map);
+        map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
+        var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
+        // remove popup's row if "visible-with-data"
+        function removeEmptyRowsFromPopupContent(content, feature) {
+         var tempDiv = document.createElement('div');
+         tempDiv.innerHTML = content;
+         var rows = tempDiv.querySelectorAll('tr');
+         for (var i = 0; i < rows.length; i++) {
+             var td = rows[i].querySelector('td.visible-with-data');
+             var key = td ? td.id : '';
+             if (td && td.classList.contains('visible-with-data') && feature.properties[key] == null) {
+                 rows[i].parentNode.removeChild(rows[i]);
+             }
+         }
+         return tempDiv.innerHTML;
+        }
+        // add class to format popup if it contains media
+		function addClassToPopupIfMedia(content, popup) {
+			var tempDiv = document.createElement('div');
+			tempDiv.innerHTML = content;
+			if (tempDiv.querySelector('td img')) {
+				popup._contentNode.classList.add('media');
+					// Delay to force the redraw
+					setTimeout(function() {
+						popup.update();
+					}, 10);
+			} else {
+				popup._contentNode.classList.remove('media');
+			}
+		}
+        var zoomControl = L.control.zoom({
+            position: 'topleft'
+        }).addTo(map);
+        var measureControl = new L.Control.Measure({
+            position: 'topleft',
+            primaryLengthUnit: 'feet',
+            secondaryLengthUnit: 'miles',
+            primaryAreaUnit: 'sqfeet',
+            secondaryAreaUnit: 'sqmiles'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0].className += ' fas fa-ruler';
+        var bounds_group = new L.featureGroup([]);
+        function setBounds() {
+        }
+        map.createPane('pane_GoogleSatellite_0');
+        map.getPane('pane_GoogleSatellite_0').style.zIndex = 400;
+        var layer_GoogleSatellite_0 = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+            pane: 'pane_GoogleSatellite_0',
+            opacity: 1.0,
+            attribution: '<a href="https://www.google.at/permissions/geoguidelines/attr-guide.html">Map data ©2015 Google</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 20
+        });
+        layer_GoogleSatellite_0;
+        map.addLayer(layer_GoogleSatellite_0);
+        map.createPane('pane_OSMStandard_1');
+        map.getPane('pane_OSMStandard_1').style.zIndex = 401;
+        var layer_OSMStandard_1 = L.tileLayer('http://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            pane: 'pane_OSMStandard_1',
+            opacity: 0.7,
+            attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors, CC-BY-SA</a>',
+            minZoom: 1,
+            maxZoom: 28,
+            minNativeZoom: 0,
+            maxNativeZoom: 19
+        });
+        layer_OSMStandard_1;
+        map.addLayer(layer_OSMStandard_1);
+        function pop_Worldmapworld_map_2(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['fid'] !== null ? autolinker.link(feature.properties['fid'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['iso_a2'] !== null ? autolinker.link(feature.properties['iso_a2'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">NAME</th>\
+                        <td>' + (feature.properties['NAME'] !== null ? autolinker.link(feature.properties['NAME'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['FIPS_10_'] !== null ? autolinker.link(feature.properties['FIPS_10_'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">ISO_A3</th>\
+                        <td>' + (feature.properties['ISO_A3'] !== null ? autolinker.link(feature.properties['ISO_A3'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['WB_A2'] !== null ? autolinker.link(feature.properties['WB_A2'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['WB_A3'] !== null ? autolinker.link(feature.properties['WB_A3'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_Worldmapworld_map_2_0(feature) {
+            switch(String(feature.properties['NAME'])) {
+                case 'Afghanistan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,31,183,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Åland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,73,63,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Albania':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,118,211,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Algeria':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,104,135,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'American Samoa':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(169,57,203,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Andorra':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,43,159,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Angola':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(75,235,75,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Anguilla':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,88,44,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Antarctica':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(113,232,166,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Antigua and Barb.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(169,206,114,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Argentina':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(20,78,237,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Armenia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(182,53,211,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Aruba':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(213,188,29,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Australia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(60,211,43,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Austria':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(211,70,166,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Azerbaijan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(69,217,32,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bahamas':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(71,95,202,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bahrain':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,106,171,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bangladesh':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(93,227,209,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Barbados':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,33,87,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Belarus':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(42,236,93,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Belgium':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(45,181,222,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Belize':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(219,219,51,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Benin':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,46,42,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bermuda':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(104,227,174,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bhutan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,19,137,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bolivia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(128,224,149,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bosnia and Herz.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(225,167,136,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Botswana':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(91,104,205,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Br. Indian Ocean Ter.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(36,92,212,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Brazil':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(141,27,234,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'British Virgin Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(231,58,150,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Brunei':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(79,233,228,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Bulgaria':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(50,147,239,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Burkina Faso':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(108,92,229,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Burundi':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(131,15,209,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cabo Verde':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(29,143,209,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cambodia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(153,26,231,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cameroon':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(211,31,103,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Canada':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(211,193,94,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cayman Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,91,41,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Central African Rep.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(159,228,80,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Chad':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(124,208,41,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Chile':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(117,238,202,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'China':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(169,82,216,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Colombia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(127,64,221,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Comoros':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(108,232,42,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Congo':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(50,63,202,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cook Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,177,101,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Costa Rica':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(13,72,222,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Côte d\'Ivoire':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(178,15,207,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Croatia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,137,214,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cuba':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(172,103,200,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Curaçao':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(103,65,208,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Cyprus':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,132,20,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Czechia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(162,27,220,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Dem. Rep. Congo':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(188,238,141,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Denmark':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(97,205,64,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Djibouti':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,154,65,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Dominica':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,50,128,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Dominican Rep.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(228,98,23,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Ecuador':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(99,232,16,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Egypt':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(191,221,73,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'El Salvador':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(83,224,128,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Eq. Guinea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(165,100,239,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Eritrea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(55,119,208,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Estonia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(105,189,228,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'eSwatini':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(130,232,173,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Ethiopia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,112,176,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Faeroe Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,203,188,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Falkland Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(225,59,117,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Fiji':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,68,98,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Finland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(171,104,234,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Fr. Polynesia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(100,116,215,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Fr. S. Antarctic Lands':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,233,133,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'France':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,86,229,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Gabon':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(30,204,146,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Gambia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(180,210,97,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Georgia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(109,163,205,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Germany':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(106,206,103,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Ghana':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(133,212,230,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Gibraltar':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,202,34,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Greece':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(202,227,127,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Greenland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,217,77,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Grenada':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(216,90,153,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guam':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(49,125,206,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guatemala':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(40,206,175,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guernsey':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(229,185,75,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guinea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(174,210,107,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guinea-Bissau':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,19,57,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Guyana':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(237,145,52,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Haiti':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,166,237,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Heard I. and McDonald Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(223,118,104,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Honduras':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,16,180,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Hong Kong':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(87,51,232,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Hungary':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(194,213,99,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Iceland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(130,102,214,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'India':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(209,66,192,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Indonesia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(131,211,20,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Iran':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(97,99,237,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Iraq':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(132,227,17,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Ireland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(201,100,105,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Isle of Man':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(238,203,61,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Israel':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(125,109,203,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Italy':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(236,215,23,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Jamaica':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,51,14,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Japan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(81,148,225,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Jersey':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(102,213,58,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Jordan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(33,207,97,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kazakhstan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,49,180,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kenya':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,60,218,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kiribati':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,113,237,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kosovo':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(37,239,205,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kuwait':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(140,161,237,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Kyrgyzstan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(127,211,234,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Laos':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,204,23,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Latvia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(68,73,216,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Lebanon':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(208,171,59,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Lesotho':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(129,84,213,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Liberia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(86,172,226,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Libya':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(102,230,219,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Liechtenstein':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(214,151,124,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Lithuania':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(233,149,111,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Luxembourg':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(34,133,204,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Macao':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(47,238,146,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Macedonia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(95,159,216,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Madagascar':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(111,225,145,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Malawi':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(68,218,178,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Malaysia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(122,55,204,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Maldives':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(234,42,167,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mali':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,109,98,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Malta':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(41,228,116,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Marshall Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(165,200,85,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mauritania':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(104,156,240,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mauritius':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(195,112,203,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mexico':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,150,94,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Micronesia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(101,214,120,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Moldova':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(205,136,240,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Monaco':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(220,132,183,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mongolia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(151,113,233,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Montenegro':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(224,182,98,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Montserrat':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(200,23,91,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Morocco':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,98,103,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Mozambique':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(50,81,233,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Myanmar':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(204,123,191,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'N. Mariana Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,141,224,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Namibia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(213,117,91,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Nauru':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(212,50,212,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Nepal':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(89,198,238,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Netherlands':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(27,218,132,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'New Caledonia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(211,162,88,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'New Zealand':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(209,182,120,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Nicaragua':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(227,219,64,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Niger':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(20,33,217,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Nigeria':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,106,41,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Niue':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(136,204,90,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Norfolk Island':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(178,111,229,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'North Korea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(74,211,88,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Norway':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(217,107,116,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Oman':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(100,198,201,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Pakistan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,139,31,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Palau':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(42,205,33,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Palestine':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(83,222,224,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Panama':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(60,231,145,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Papua New Guinea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,78,212,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Paraguay':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(128,158,217,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Peru':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,50,108,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Philippines':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,97,217,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Pitcairn Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(175,27,224,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Poland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(235,62,53,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Portugal':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(160,220,130,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Puerto Rico':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(230,204,87,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Qatar':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(213,132,118,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Romania':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(118,81,205,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Russia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(222,134,62,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Rwanda':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(171,214,17,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'S. Geo. and the Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(81,64,232,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'S. Sudan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(226,23,114,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Saint Helena':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(88,169,210,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Saint Lucia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(66,205,215,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Samoa':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,68,221,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'San Marino':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(214,46,240,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'São Tomé and Principe':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(216,83,114,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Saudi Arabia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(202,65,131,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Senegal':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(109,219,137,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Serbia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(124,201,107,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Seychelles':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(140,203,31,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Sierra Leone':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(114,137,214,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Singapore':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(24,211,111,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Sint Maarten':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(96,202,195,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Slovakia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(202,114,36,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Slovenia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,42,229,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Solomon Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(97,60,231,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Somalia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(26,182,213,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'South Africa':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(104,218,216,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'South Korea':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,195,72,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Spain':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(195,104,218,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Sri Lanka':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(206,48,164,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'St-Barthélemy':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(43,193,216,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'St-Martin':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(126,62,215,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'St. Kitts and Nevis':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(31,217,53,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'St. Pierre and Miquelon':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(100,203,84,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'St. Vin. and Gren.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(213,23,42,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Sudan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(199,206,76,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Suriname':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,82,102,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Sweden':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(103,224,105,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Switzerland':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(240,189,22,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Syria':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(37,163,212,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Taiwan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(76,203,214,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Tajikistan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(102,226,80,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Tanzania':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(128,29,226,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Thailand':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,97,97,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Timor-Leste':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(25,237,191,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Togo':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(203,112,94,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Tonga':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(221,27,218,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Trinidad and Tobago':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(83,222,92,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Tunisia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(234,88,108,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Turkey':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(164,232,108,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Turkmenistan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(118,57,223,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Turks and Caicos Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(47,200,55,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Tuvalu':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(72,188,203,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'U.S. Minor Outlying Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(210,153,46,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'U.S. Virgin Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(40,226,183,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Uganda':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(116,222,185,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Ukraine':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(77,207,97,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'United Arab Emirates':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(104,100,218,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'United Kingdom':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(207,209,66,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'United States of America':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(115,214,174,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Uruguay':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(135,231,194,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Uzbekistan':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(119,212,88,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Vanuatu':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(108,234,152,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Venezuela':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(162,202,76,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Vietnam':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(110,234,15,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'W. Sahara':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(239,17,84,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Wallis and Futuna Is.':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(127,218,119,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Yemen':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(194,220,47,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Zambia':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(209,78,196,0.3)',
+                interactive: false,
+            }
+                    break;
+                case 'Zimbabwe':
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(255,0,0,0.3)',
+                interactive: false,
+            }
+                    break;
+                default:
+                    return {
+                pane: 'pane_Worldmapworld_map_2',
+                opacity: 1,
+                color: 'rgba(35,35,35,0.3)',
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1.0, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(103,212,125,0.3)',
+                interactive: false,
+            }
+                    break;
+            }
+        }
+        map.createPane('pane_Worldmapworld_map_2');
+        map.getPane('pane_Worldmapworld_map_2').style.zIndex = 402;
+        map.getPane('pane_Worldmapworld_map_2').style['mix-blend-mode'] = 'normal';
+        var layer_Worldmapworld_map_2 = new L.geoJson(json_Worldmapworld_map_2, {
+            attribution: '',
+            interactive: false,
+            dataVar: 'json_Worldmapworld_map_2',
+            layerName: 'layer_Worldmapworld_map_2',
+            pane: 'pane_Worldmapworld_map_2',
+            onEachFeature: pop_Worldmapworld_map_2,
+            style: style_Worldmapworld_map_2_0,
+        });
+        bounds_group.addLayer(layer_Worldmapworld_map_2);
+        map.addLayer(layer_Worldmapworld_map_2);
+        function pop_submarine_cables_3(feature, layer) {
+            layer.on({
+                mouseout: function(e) {
+                    if (typeof layer.closePopup == 'function') {
+                        layer.closePopup();
+                    } else {
+                        layer.eachLayer(function(feature){
+                            feature.closePopup()
+                        });
+                    }
+                },
+                mouseover: highlightFeature,
+            });
+            var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">name</th>\
+                        <td class="visible-with-data" id="name">' + (feature.properties['name'] !== null ? autolinker.link(feature.properties['name'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">id</th>\
+                        <td class="visible-with-data" id="id">' + (feature.properties['id'] !== null ? autolinker.link(feature.properties['id'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">cable_id</th>\
+                        <td class="visible-with-data" id="cable_id">' + (feature.properties['cable_id'] !== null ? autolinker.link(feature.properties['cable_id'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['color'] !== null ? autolinker.link(feature.properties['color'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">length</th>\
+                        <td class="visible-with-data" id="length">' + (feature.properties['length'] !== null ? autolinker.link(feature.properties['length'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['rfs'] !== null ? autolinker.link(feature.properties['rfs'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <th scope="row">owners</th>\
+                        <td class="visible-with-data" id="owners">' + (feature.properties['owners'] !== null ? autolinker.link(feature.properties['owners'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['url'] !== null ? autolinker.link(feature.properties['url'].toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_submarine_cables_3_0() {
+            return {
+                pane: 'pane_submarine_cables_3',
+                opacity: 1,
+                color: 'rgba(18,150,31,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 1.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_submarine_cables_3');
+        map.getPane('pane_submarine_cables_3').style.zIndex = 403;
+        map.getPane('pane_submarine_cables_3').style['mix-blend-mode'] = 'normal';
+        var layer_submarine_cables_3 = new L.geoJson(json_submarine_cables_3, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_submarine_cables_3',
+            layerName: 'layer_submarine_cables_3',
+            pane: 'pane_submarine_cables_3',
+            onEachFeature: pop_submarine_cables_3,
+            style: style_submarine_cables_3_0,
+        });
+        bounds_group.addLayer(layer_submarine_cables_3);
+        map.addLayer(layer_submarine_cables_3);
+        var osmGeocoder = new L.Control.Geocoder({
+            collapsed: true,
+            position: 'topleft',
+            text: 'Search',
+            title: 'Testing'
+        }).addTo(map);
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .className += ' fa fa-search';
+        document.getElementsByClassName('leaflet-control-geocoder-icon')[0]
+        .title += 'Search for a place';
+        var baseMaps = {};
+        var overlaysTree = [
+            {label: '<img src="legend/submarine_cables_3.png" /> submarine_cables', layer: layer_submarine_cables_3},
+            {label: 'World map — world_map<br /><table><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Afghanistan0.png" /></td><td>Afghanistan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Åland1.png" /></td><td>Åland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Albania2.png" /></td><td>Albania</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Algeria3.png" /></td><td>Algeria</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_AmericanSamoa4.png" /></td><td>American Samoa</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Andorra5.png" /></td><td>Andorra</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Angola6.png" /></td><td>Angola</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Anguilla7.png" /></td><td>Anguilla</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Antarctica8.png" /></td><td>Antarctica</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_AntiguaandBarb9.png" /></td><td>Antigua and Barb.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Argentina10.png" /></td><td>Argentina</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Armenia11.png" /></td><td>Armenia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Aruba12.png" /></td><td>Aruba</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Australia13.png" /></td><td>Australia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Austria14.png" /></td><td>Austria</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Azerbaijan15.png" /></td><td>Azerbaijan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bahamas16.png" /></td><td>Bahamas</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bahrain17.png" /></td><td>Bahrain</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bangladesh18.png" /></td><td>Bangladesh</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Barbados19.png" /></td><td>Barbados</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Belarus20.png" /></td><td>Belarus</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Belgium21.png" /></td><td>Belgium</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Belize22.png" /></td><td>Belize</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Benin23.png" /></td><td>Benin</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bermuda24.png" /></td><td>Bermuda</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bhutan25.png" /></td><td>Bhutan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bolivia26.png" /></td><td>Bolivia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_BosniaandHerz27.png" /></td><td>Bosnia and Herz.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Botswana28.png" /></td><td>Botswana</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_BrIndianOceanTer29.png" /></td><td>Br. Indian Ocean Ter.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Brazil30.png" /></td><td>Brazil</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_BritishVirginIs31.png" /></td><td>British Virgin Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Brunei32.png" /></td><td>Brunei</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Bulgaria33.png" /></td><td>Bulgaria</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_BurkinaFaso34.png" /></td><td>Burkina Faso</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Burundi35.png" /></td><td>Burundi</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CaboVerde36.png" /></td><td>Cabo Verde</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Cambodia37.png" /></td><td>Cambodia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Cameroon38.png" /></td><td>Cameroon</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Canada39.png" /></td><td>Canada</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CaymanIs40.png" /></td><td>Cayman Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CentralAfricanRep41.png" /></td><td>Central African Rep.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Chad42.png" /></td><td>Chad</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Chile43.png" /></td><td>Chile</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_China44.png" /></td><td>China</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Colombia45.png" /></td><td>Colombia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Comoros46.png" /></td><td>Comoros</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Congo47.png" /></td><td>Congo</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CookIs48.png" /></td><td>Cook Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CostaRica49.png" /></td><td>Costa Rica</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_CôtedIvoire50.png" /></td><td>Côte d\'Ivoire</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Croatia51.png" /></td><td>Croatia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Cuba52.png" /></td><td>Cuba</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Curaçao53.png" /></td><td>Curaçao</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Cyprus54.png" /></td><td>Cyprus</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Czechia55.png" /></td><td>Czechia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_DemRepCongo56.png" /></td><td>Dem. Rep. Congo</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Denmark57.png" /></td><td>Denmark</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Djibouti58.png" /></td><td>Djibouti</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Dominica59.png" /></td><td>Dominica</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_DominicanRep60.png" /></td><td>Dominican Rep.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Ecuador61.png" /></td><td>Ecuador</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Egypt62.png" /></td><td>Egypt</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_ElSalvador63.png" /></td><td>El Salvador</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_EqGuinea64.png" /></td><td>Eq. Guinea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Eritrea65.png" /></td><td>Eritrea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Estonia66.png" /></td><td>Estonia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_eSwatini67.png" /></td><td>eSwatini</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Ethiopia68.png" /></td><td>Ethiopia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_FaeroeIs69.png" /></td><td>Faeroe Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_FalklandIs70.png" /></td><td>Falkland Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Fiji71.png" /></td><td>Fiji</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Finland72.png" /></td><td>Finland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_FrPolynesia73.png" /></td><td>Fr. Polynesia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_FrSAntarcticLands74.png" /></td><td>Fr. S. Antarctic Lands</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_France75.png" /></td><td>France</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Gabon76.png" /></td><td>Gabon</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Gambia77.png" /></td><td>Gambia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Georgia78.png" /></td><td>Georgia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Germany79.png" /></td><td>Germany</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Ghana80.png" /></td><td>Ghana</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Gibraltar81.png" /></td><td>Gibraltar</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Greece82.png" /></td><td>Greece</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Greenland83.png" /></td><td>Greenland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Grenada84.png" /></td><td>Grenada</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Guam85.png" /></td><td>Guam</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Guatemala86.png" /></td><td>Guatemala</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Guernsey87.png" /></td><td>Guernsey</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Guinea88.png" /></td><td>Guinea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_GuineaBissau89.png" /></td><td>Guinea-Bissau</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Guyana90.png" /></td><td>Guyana</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Haiti91.png" /></td><td>Haiti</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_HeardIandMcDonaldIs92.png" /></td><td>Heard I. and McDonald Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Honduras93.png" /></td><td>Honduras</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_HongKong94.png" /></td><td>Hong Kong</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Hungary95.png" /></td><td>Hungary</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Iceland96.png" /></td><td>Iceland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_India97.png" /></td><td>India</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Indonesia98.png" /></td><td>Indonesia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Iran99.png" /></td><td>Iran</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Iraq100.png" /></td><td>Iraq</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Ireland101.png" /></td><td>Ireland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_IsleofMan102.png" /></td><td>Isle of Man</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Israel103.png" /></td><td>Israel</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Italy104.png" /></td><td>Italy</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Jamaica105.png" /></td><td>Jamaica</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Japan106.png" /></td><td>Japan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Jersey107.png" /></td><td>Jersey</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Jordan108.png" /></td><td>Jordan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kazakhstan109.png" /></td><td>Kazakhstan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kenya110.png" /></td><td>Kenya</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kiribati111.png" /></td><td>Kiribati</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kosovo112.png" /></td><td>Kosovo</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kuwait113.png" /></td><td>Kuwait</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Kyrgyzstan114.png" /></td><td>Kyrgyzstan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Laos115.png" /></td><td>Laos</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Latvia116.png" /></td><td>Latvia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Lebanon117.png" /></td><td>Lebanon</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Lesotho118.png" /></td><td>Lesotho</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Liberia119.png" /></td><td>Liberia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Libya120.png" /></td><td>Libya</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Liechtenstein121.png" /></td><td>Liechtenstein</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Lithuania122.png" /></td><td>Lithuania</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Luxembourg123.png" /></td><td>Luxembourg</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Macao124.png" /></td><td>Macao</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Macedonia125.png" /></td><td>Macedonia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Madagascar126.png" /></td><td>Madagascar</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Malawi127.png" /></td><td>Malawi</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Malaysia128.png" /></td><td>Malaysia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Maldives129.png" /></td><td>Maldives</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mali130.png" /></td><td>Mali</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Malta131.png" /></td><td>Malta</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_MarshallIs132.png" /></td><td>Marshall Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mauritania133.png" /></td><td>Mauritania</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mauritius134.png" /></td><td>Mauritius</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mexico135.png" /></td><td>Mexico</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Micronesia136.png" /></td><td>Micronesia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Moldova137.png" /></td><td>Moldova</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Monaco138.png" /></td><td>Monaco</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mongolia139.png" /></td><td>Mongolia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Montenegro140.png" /></td><td>Montenegro</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Montserrat141.png" /></td><td>Montserrat</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Morocco142.png" /></td><td>Morocco</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Mozambique143.png" /></td><td>Mozambique</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Myanmar144.png" /></td><td>Myanmar</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_NMarianaIs145.png" /></td><td>N. Mariana Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Namibia146.png" /></td><td>Namibia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Nauru147.png" /></td><td>Nauru</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Nepal148.png" /></td><td>Nepal</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Netherlands149.png" /></td><td>Netherlands</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_NewCaledonia150.png" /></td><td>New Caledonia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_NewZealand151.png" /></td><td>New Zealand</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Nicaragua152.png" /></td><td>Nicaragua</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Niger153.png" /></td><td>Niger</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Nigeria154.png" /></td><td>Nigeria</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Niue155.png" /></td><td>Niue</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_NorfolkIsland156.png" /></td><td>Norfolk Island</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_NorthKorea157.png" /></td><td>North Korea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Norway158.png" /></td><td>Norway</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Oman159.png" /></td><td>Oman</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Pakistan160.png" /></td><td>Pakistan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Palau161.png" /></td><td>Palau</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Palestine162.png" /></td><td>Palestine</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Panama163.png" /></td><td>Panama</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_PapuaNewGuinea164.png" /></td><td>Papua New Guinea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Paraguay165.png" /></td><td>Paraguay</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Peru166.png" /></td><td>Peru</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Philippines167.png" /></td><td>Philippines</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_PitcairnIs168.png" /></td><td>Pitcairn Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Poland169.png" /></td><td>Poland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Portugal170.png" /></td><td>Portugal</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_PuertoRico171.png" /></td><td>Puerto Rico</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Qatar172.png" /></td><td>Qatar</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Romania173.png" /></td><td>Romania</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Russia174.png" /></td><td>Russia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Rwanda175.png" /></td><td>Rwanda</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SGeoandtheIs176.png" /></td><td>S. Geo. and the Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SSudan177.png" /></td><td>S. Sudan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SaintHelena178.png" /></td><td>Saint Helena</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SaintLucia179.png" /></td><td>Saint Lucia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Samoa180.png" /></td><td>Samoa</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SanMarino181.png" /></td><td>San Marino</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SãoToméandPrincipe182.png" /></td><td>São Tomé and Principe</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SaudiArabia183.png" /></td><td>Saudi Arabia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Senegal184.png" /></td><td>Senegal</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Serbia185.png" /></td><td>Serbia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Seychelles186.png" /></td><td>Seychelles</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SierraLeone187.png" /></td><td>Sierra Leone</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Singapore188.png" /></td><td>Singapore</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SintMaarten189.png" /></td><td>Sint Maarten</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Slovakia190.png" /></td><td>Slovakia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Slovenia191.png" /></td><td>Slovenia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SolomonIs192.png" /></td><td>Solomon Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Somalia193.png" /></td><td>Somalia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SouthAfrica194.png" /></td><td>South Africa</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SouthKorea195.png" /></td><td>South Korea</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Spain196.png" /></td><td>Spain</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_SriLanka197.png" /></td><td>Sri Lanka</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_StBarthélemy198.png" /></td><td>St-Barthélemy</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_StMartin199.png" /></td><td>St-Martin</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_StKittsandNevis200.png" /></td><td>St. Kitts and Nevis</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_StPierreandMiquelon201.png" /></td><td>St. Pierre and Miquelon</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_StVinandGren202.png" /></td><td>St. Vin. and Gren.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Sudan203.png" /></td><td>Sudan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Suriname204.png" /></td><td>Suriname</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Sweden205.png" /></td><td>Sweden</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Switzerland206.png" /></td><td>Switzerland</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Syria207.png" /></td><td>Syria</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Taiwan208.png" /></td><td>Taiwan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Tajikistan209.png" /></td><td>Tajikistan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Tanzania210.png" /></td><td>Tanzania</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Thailand211.png" /></td><td>Thailand</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_TimorLeste212.png" /></td><td>Timor-Leste</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Togo213.png" /></td><td>Togo</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Tonga214.png" /></td><td>Tonga</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_TrinidadandTobago215.png" /></td><td>Trinidad and Tobago</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Tunisia216.png" /></td><td>Tunisia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Turkey217.png" /></td><td>Turkey</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Turkmenistan218.png" /></td><td>Turkmenistan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_TurksandCaicosIs219.png" /></td><td>Turks and Caicos Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Tuvalu220.png" /></td><td>Tuvalu</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_USMinorOutlyingIs221.png" /></td><td>U.S. Minor Outlying Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_USVirginIs222.png" /></td><td>U.S. Virgin Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Uganda223.png" /></td><td>Uganda</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Ukraine224.png" /></td><td>Ukraine</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_UnitedArabEmirates225.png" /></td><td>United Arab Emirates</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_UnitedKingdom226.png" /></td><td>United Kingdom</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_UnitedStatesofAmerica227.png" /></td><td>United States of America</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Uruguay228.png" /></td><td>Uruguay</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Uzbekistan229.png" /></td><td>Uzbekistan</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Vanuatu230.png" /></td><td>Vanuatu</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Venezuela231.png" /></td><td>Venezuela</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Vietnam232.png" /></td><td>Vietnam</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_WSahara233.png" /></td><td>W. Sahara</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_WallisandFutunaIs234.png" /></td><td>Wallis and Futuna Is.</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Yemen235.png" /></td><td>Yemen</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Zambia236.png" /></td><td>Zambia</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_Zimbabwe237.png" /></td><td>Zimbabwe</td></tr><tr><td style="text-align: center;"><img src="legend/Worldmapworld_map_2_238.png" /></td><td></td></tr></table>', layer: layer_Worldmapworld_map_2},
+            {label: "OSM Standard", layer: layer_OSMStandard_1},
+            {label: "Google Satellite", layer: layer_GoogleSatellite_0},]
+        var lay = L.control.layers.tree(null, overlaysTree,{
+            //namedToggle: true,
+            //selectorBack: false,
+            //closedSymbol: '&#8862; &#x1f5c0;',
+            //openedSymbol: '&#8863; &#x1f5c1;',
+            //collapseAll: 'Collapse all',
+            //expandAll: 'Expand all',
+            collapsed: true,
+        });
+        lay.addTo(map);
+        setBounds();
+        resetLabels([layer_Worldmapworld_map_2]);
+        map.on("zoomend", function(){
+            resetLabels([layer_Worldmapworld_map_2]);
+        });
+        map.on("layeradd", function(){
+            resetLabels([layer_Worldmapworld_map_2]);
+        });
+        map.on("layerremove", function(){
+            resetLabels([layer_Worldmapworld_map_2]);
+        });
+        </script>
+    </body>
+</html>
